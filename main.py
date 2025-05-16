@@ -28,8 +28,13 @@ for row in rows[:10]:
         h24_volume = h24_volume.get_text(strip=True)
 
         cryptos.append({
-            "Όνομα": name,
-            "Τιμή": price
+            "Name": name,
+            "Price": price,
+            "Change 24H": change24H,
+            "Change 7D": change7d,
+            "Total Volume": total_volume,
+            "24H Volume": h24_volume
+
         })
 
 # Print cryptocurrencies
