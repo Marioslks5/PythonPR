@@ -11,10 +11,13 @@ cryptos = []
 
 rows = soup.find_all("tr", attrs={"data-id": True})
 
-# Extracting data from each row
-for row in rows[:10]:  # Πρώτα 10 νομίσματα
-    crypto_name = row.find("td", class_= "currency-name")
-    crypto_price = row.find("td", class_="price_td_p")
+for row in rows[:10]:
+    crypto_name = row.find("td", class_="currency-name")
+    crypto_price_div = row.find("div", class_="table-price-class")
+    change_24h = row.find("div", class_="h24_change")
+    change_7d = row.find("div", class_="7d_change2")
+    total_volume = row.find("td", class_="market-cap")
+    h24_volume = row.find("div", class_="table-volume-class")
 
     if crypto_name and crypto_price:
         name = crypto_name.find("p", class_="m-c-name").get_text(strip=True)
