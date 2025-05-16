@@ -41,7 +41,7 @@ class Cryptoscraper:
 
                 })
         self.cryptos = cryptos
-                
+
     def print_data(self):
         for crypto in self.cryptos:
             print(crypto)
