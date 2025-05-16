@@ -1,3 +1,3 @@
-print("Hello World")
-
-print("O marios kai o taxiarxis ine omorfoi")
+import requests
+from bs4 import BeautifulSoup
+import pandas
