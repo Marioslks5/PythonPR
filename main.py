@@ -40,7 +40,12 @@ class Cryptoscraper:
                     "24H Volume": h24_volume
 
                 })
-
+        self.cryptos = cryptos
+                
     def print_data(self):
         for crypto in self.cryptos:
             print(crypto)
+
+scraper = Cryptoscraper()
+scraper.scrape_data()
+scraper.print_data()
