@@ -19,9 +19,14 @@ for row in rows[:10]:
     total_volume = row.find("td", class_="market-cap")
     h24_volume = row.find("div", class_="table-volume-class")
 
-    if crypto_name and crypto_price:
-        name = crypto_name.find("p", class_="m-c-name").get_text(strip=True)
-        price = crypto_price.find("div", class_="table-price-class").get_text(strip=True)
+    if crypto_name and crypto_price_div:
+        name = crypto_name.get_text(strip=True)
+        price = crypto_price_div.get_text(strip=True)
+        change24H = change_24h.get_text(strip=True)
+        change7d = change_7d.get_text(strip=True)
+        total_volume = total_volume.get_text(strip=True)
+        h24_volume = h24_volume.get_text(strip=True)
+
         cryptos.append({
             "Όνομα": name,
             "Τιμή": price
