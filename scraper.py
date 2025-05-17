@@ -27,7 +27,7 @@ class Cryptoscraper:
                 name = crypto_name.get_text(strip=True)
                 symbol = name.split()[0].lower()
                 price = crypto_price.get_text(strip=True)
-                change24H = change_24h.get_text(strip=True)
+                change24h = change_24h.get_text(strip=True)
                 change7d = change_7d.get_text(strip=True)
                 total_volume = total_volume.get_text(strip=True)
                 h24_volume = h24_volume.get_text(strip=True)
@@ -36,7 +36,7 @@ class Cryptoscraper:
                     "Name": name,
                     "Symbol": symbol,
                     "Price": price,
-                    "Change 24H": change24H,
+                    "Change 24H": change24h,
                     "Change 7D": change7d,
                     "Total Volume": total_volume,
                     "24H Volume": h24_volume
