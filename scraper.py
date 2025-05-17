@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 class Cryptoscraper:
 
@@ -58,8 +59,13 @@ class Cryptoscraper:
                 return crypto
         return None
 
+    def save_csv(self,filename="cryptos.csv"):
+        df = pd.DataFrame(self.cryptos)
+        df.to_csv(filename,index=False)
+
 scraper = Cryptoscraper()
 scraper.scrape_data()
 scraper.print_data()
+scraper.save_csv()
 
 print(scraper.get_coin_data("bitcoinbtc"))
