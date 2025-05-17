@@ -17,15 +17,16 @@ class Cryptoscraper:
 
         for row in rows[:10]:
             crypto_name = row.find("td", class_="currency-name")
-            crypto_price_div = row.find("div", class_="table-price-class")
+            crypto_price = row.find("div", class_="table-price-class")
             change_24h = row.find("div", class_="h24_change")
             change_7d = row.find("div", class_="7d_change2")
             total_volume = row.find("td", class_="market-cap")
             h24_volume = row.find("div", class_="table-volume-class")
 
-            if crypto_name and crypto_price_div:
+            if crypto_name and crypto_price:
                 name = crypto_name.get_text(strip=True)
-                price = crypto_price_div.get_text(strip=True)
+                symbol = name.split()[0].lower()
+                price = crypto_price.get_text(strip=True)
                 change24H = change_24h.get_text(strip=True)
                 change7d = change_7d.get_text(strip=True)
                 total_volume = total_volume.get_text(strip=True)
@@ -33,6 +34,7 @@ class Cryptoscraper:
 
                 cryptos.append({
                     "Name": name,
+                    "Symbol": symbol,
                     "Price": price,
                     "Change 24H": change24H,
                     "Change 7D": change7d,
@@ -46,6 +48,18 @@ class Cryptoscraper:
         for crypto in self.cryptos:
             print(crypto)
 
+    def get_coin_names(self):
+        return [entry["Symbol"] for entry in self.cryptos]
+
+    def get_coin_data(self, symbol):
+        symbol = symbol.lower()
+        for crypto in self.cryptos:
+            if crypto["Symbol"] == symbol:
+                return crypto
+        return None
+
 scraper = Cryptoscraper()
 scraper.scrape_data()
 scraper.print_data()
+
+print(scraper.get_coin_data("bitcoinbtc"))
