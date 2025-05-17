@@ -2,70 +2,66 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-class Cryptoscraper:
+# Global variable to store cryptocurrency data
+cryptos = []
 
-    def __init__(self,url="https://www.coinlore.com/"):
-        self.url = url
-        self.cryptos = []
+def scrape_data():
+    url = "https://www.coinlore.com/"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-    def scrape_data(self):
-        response = requests.get(self.url)
-        soup = BeautifulSoup(response.text, "html.parser")
+    global cryptos
+    cryptos = []  # Reset the list before scraping new data
 
-        cryptos = []
+    rows = soup.find_all("tr", attrs={"data-id": True})
 
-        rows = soup.find_all("tr", attrs={"data-id": True})
+    for row in rows[:10]:
+        crypto_name = row.find("td", class_="currency-name")
+        crypto_price = row.find("div", class_="table-price-class")
+        change_24h = row.find("div", class_="h24_change")
+        change_7d = row.find("div", class_="7d_change2")
+        total_volume = row.find("td", class_="market-cap")
+        h24_volume = row.find("div", class_="table-volume-class")
 
-        for row in rows[:10]:
-            crypto_name = row.find("td", class_="currency-name")
-            crypto_price = row.find("div", class_="table-price-class")
-            change_24h = row.find("div", class_="h24_change")
-            change_7d = row.find("div", class_="7d_change2")
-            total_volume = row.find("td", class_="market-cap")
-            h24_volume = row.find("div", class_="table-volume-class")
+        if crypto_name and crypto_price:
+            name = crypto_name.get_text(strip=True)
+            symbol = name[-3:].lower()
+            price = crypto_price.get_text(strip=True)
+            change24h = change_24h.get_text(strip=True)
+            change7d = change_7d.get_text(strip=True)
+            total_volume = total_volume.get_text(strip=True)
+            h24_volume = h24_volume.get_text(strip=True)
 
-            if crypto_name and crypto_price:
-                name = crypto_name.get_text(strip=True)
-                symbol = name[-3:].lower()
-                price = crypto_price.get_text(strip=True)
-                change24h = change_24h.get_text(strip=True)
-                change7d = change_7d.get_text(strip=True)
-                total_volume = total_volume.get_text(strip=True)
-                h24_volume = h24_volume.get_text(strip=True)
+            cryptos.append({
+                "Name": name,
+                "Symbol": symbol,
+                "Price": price,
+                "Change 24H": change24h,
+                "Change 7D": change7d,
+                "Total Volume": total_volume,
+                "24H Volume": h24_volume
+            })
 
-                cryptos.append({
-                    "Name": name,
-                    "Symbol": symbol,
-                    "Price": price,
-                    "Change 24H": change24h,
-                    "Change 7D": change7d,
-                    "Total Volume": total_volume,
-                    "24H Volume": h24_volume
+def print_data():
+    for crypto in cryptos:
+        print(crypto)
 
-                })
-        self.cryptos = cryptos
+def get_coin_names():
+    for crypto in cryptos:
+        print(crypto["Symbol"])
 
-    def print_data(self):
-        for crypto in self.cryptos:
-            print(crypto)
+def get_coin_data(symbol):
+    for crypto in cryptos:
+        if crypto["Symbol"] == symbol:
+            return crypto
+    return None
 
-    def get_coin_names(self):
-        for crypto in self.cryptos:
-            print(crypto["Symbol"])
-
-    def get_coin_data(self, Symbol):
-        for crypto in self.cryptos:
-            if crypto["Symbol"] == Symbol:
-                return crypto
-        return None
-
-    def save_csv(self,filename="cryptos.csv"):
-        df = pd.DataFrame(self.cryptos)
-        df.to_csv(filename,index=False)
+def save_csv(filename="cryptos.csv"):
+    df = pd.DataFrame(cryptos)
+    df.to_csv(filename, index=False)
 
 if __name__ == "__main__":
-    scraper = Cryptoscraper()
-    scraper.scrape_data()
-    print(scraper.get_coin_data('BitcoinBTC').get('Price'))
-    scraper.get_coin_names()
-    scraper.save_csv()
+    scrape_data()
+    print(get_coin_data('btc'))
+    get_coin_names()
+    save_csv()
