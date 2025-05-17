@@ -26,7 +26,7 @@ class Cryptoscraper:
 
             if crypto_name and crypto_price:
                 name = crypto_name.get_text(strip=True)
-                symbol = name.split()[0].lower()
+                symbol = name[-3:].lower()
                 price = crypto_price.get_text(strip=True)
                 change24h = change_24h.get_text(strip=True)
                 change7d = change_7d.get_text(strip=True)
@@ -50,12 +50,12 @@ class Cryptoscraper:
             print(crypto)
 
     def get_coin_names(self):
-        return [entry["Symbol"] for entry in self.cryptos]
-
-    def get_coin_data(self, symbol):
-        symbol = symbol.lower()
         for crypto in self.cryptos:
-            if crypto["Symbol"] == symbol:
+            print(crypto["Symbol"])
+
+    def get_coin_data(self, Symbol):
+        for crypto in self.cryptos:
+            if crypto["Symbol"] == Symbol:
                 return crypto
         return None
 
@@ -63,9 +63,9 @@ class Cryptoscraper:
         df = pd.DataFrame(self.cryptos)
         df.to_csv(filename,index=False)
 
-scraper = Cryptoscraper()
-scraper.scrape_data()
-scraper.print_data()
-scraper.save_csv()
-
-print(scraper.get_coin_data("bitcoinbtc"))
+if __name__ == "__main__":
+    scraper = Cryptoscraper()
+    scraper.scrape_data()
+    print(scraper.get_coin_data('BitcoinBTC').get('Price'))
+    scraper.get_coin_names()
+    scraper.save_csv()
