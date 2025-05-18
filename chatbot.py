@@ -16,7 +16,7 @@ SUPPORTED_COINS = [
 ]
 
 def extract_coin(user_input):
-    """Extract coin symbol from user input"""
+
     user_input = user_input.lower()
     for name, symbol in SUPPORTED_COINS:
         if name in user_input or symbol in user_input:
@@ -24,17 +24,16 @@ def extract_coin(user_input):
     return None
 
 def generate_response(user_input):
-    """Generate appropriate response based on user input"""
+
     user_input = user_input.lower()
 
     # Check for general queries
     if re.search(r"(ποιά.*νομίσματα|λίστα|διαθέσιμα|υποστηρίζονται)", user_input):
-        coins_list = ", ".join([f"{name.capitalize()}({symbol.upper()})" 
-                               for name, symbol in SUPPORTED_COINS])
+        coins_list = ", ".join([f"{name.capitalize()}({symbol.upper()})" for name, symbol in SUPPORTED_COINS])
         return f"Υποστηριζόμενα νομίσματα: {coins_list}"
 
     if re.search(r"(βοήθεια|τι μπορώ|οδηγίες|commands)", user_input):
-        return "Μπορείς να ρωτήσεις για τιμή, μεταβολή 24ωρου ή 7 ημερών, όγκο, διαθέσιμα νομίσματα, σύμβολο, κ.α."
+        return"Μπορείς να ρωτήσεις για τιμή, μεταβολή 24ωρου ή 7 ημερών, όγκο, διαθέσιμα νομίσματα, σύμβολο, κ.α."
 
     if re.search(r"(άλλαξε|διάλεξε).*νόμισμα", user_input):
         return "Πες μου το σύμβολο του νομίσματος που σε ενδιαφέρει (π.χ. BTC, ETH)."
@@ -71,7 +70,6 @@ def generate_response(user_input):
         return "Δεν κατάλαβα την ερώτησή σου. Δοκίμασε ξανά ή γράψε 'βοήθεια'."
 
 def run_chatbot():
-    """Run the chatbot interaction loop"""
     # Initialize data
     scrape_data()
     
