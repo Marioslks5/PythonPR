@@ -3,10 +3,9 @@ import pandas as pd
 import scraper  
 
 def update_csv(filename="cryptos.csv"):
-    crypto = scraper.Cryptoscraper()
-    crypto.scrape_data()
-
-    new_data = pd.DataFrame(crypto.cryptos)
+    scrape_data()
+    new_data=
+    pd.DataFrame(scraper.cryptos)
 
     if os.path.exists(filename):
         old_data = pd.read_csv(filename)
