@@ -1,0 +1,441 @@
+import tkinter as tk
+import re
+import numpy as np
+import os
+import scraper
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup
+from scraper import get_coin_data, scrape_data
+from tkinter import Toplevel, Label, Button, Frame, Scrollbar, messagebox, Canvas
+from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
+
+cryptos = []
+
+# Create main window
+root = tk.Tk()
+root.title("Crypto Dashboard with Images")
+root.geometry("1000x600")
+
+def closing_warning():
+    if messagebox.askokcancel("Quit", "Do you really want to quit?"):
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", closing_warning)
+
+# === Data ===
+CRYPTO_LIST = [
+    {"name": "Bitcoin", "image": "Bitcoin.jpg"},
+    {"name": "Ethereum", "image": "ethereum.jpg"},
+    {"name": "Cardano", "image": "cardano.jpg"},
+    {"name": "Solana", "image": "Solana.jpg"},
+    {"name": "Binance CoinBNB", "image": "BNB.jpg"},
+    {"name": "Tether", "image": "Tether.jpg"},
+    {"name": "USD CoinUSDC", "image": "USDC.jpg"},
+    {"name": "XRP", "image": "xrp.jpg"},
+    {"name": "Dogecoin", "image": "Dogecoin.jpg"},
+    {"name": "Lido Staked EtherSTETH", "image": "STETH.jpg"},
+]
+
+COIN_IMAGES = {}
+for coin in CRYPTO_LIST:
+    try:
+        img = Image.open(coin["image"]).resize((32, 32))
+        COIN_IMAGES[coin["name"]] = ImageTk.PhotoImage(img)
+    except Exception as e:
+        print(f"Error: {e}")
+
+selected_coin = tk.StringVar()
+selected_coin.set("Select Cryptocurrency")
+
+# === Custom Dropdown with Icons and Scrollbar ===
+def open_dropdown():
+    dropdown = Toplevel(root)
+    dropdown.title("Select Coin")
+    dropdown.geometry("250x550")
+
+    canvas = Canvas(dropdown)
+    scrollbar = Scrollbar(dropdown, orient="vertical", command=canvas.yview)
+    scroll_frame = Frame(canvas)
+
+    scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    def select_all():
+        selected_coin.set("Select Cryptocurrency")
+        dropdown.destroy()
+        fetch_data()
+
+    all_btn = Button(scroll_frame, text="All Cryptocurrencies", command=select_all)
+    all_btn.pack(pady=5, padx=5, anchor="w")
+
+    for coin in CRYPTO_LIST:
+        photo = COIN_IMAGES.get(coin["name"])
+
+        def select(c=coin["name"]):
+            selected_coin.set(c)
+            dropdown.destroy()
+            fetch_data()
+
+        btn = Button(scroll_frame, text=coin["name"], image=photo, compound="left", command=select)
+        btn.pack(pady=5, padx=5, anchor="w")
+
+
+# === Top Buttons ===
+top_frame = Frame(root)
+top_frame.pack(pady=10)
+
+def fetch_data():
+    url = "https://www.coinlore.com/"
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        rows = soup.find_all("tr", attrs={"data-id": True})
+        cryptos.clear()
+
+        for row in rows[:10]:
+            name_cell = row.find("td", class_="currency-name")
+            price = row.find("div", class_="table-price-class")
+            change_24h = row.find("div", class_="h24_change")
+            change_7d = row.find("div", class_="7d_change2")
+            total_volume = row.find("td", class_="market-cap")
+            h24_volume = row.find("div", class_="table-volume-class")
+
+            if name_cell and price:
+                name = name_cell.get_text(strip=True)
+                symbol = name[-3:].lower()
+                cryptos.append({
+                    "Name": name,
+                    "Symbol": symbol,
+                    "Price": price.get_text(strip=True),
+                    "Change 24H": change_24h.get_text(strip=True),
+                    "Change 7D": change_7d.get_text(strip=True),
+                    "Total Volume": total_volume.get_text(strip=True),
+                    "24H Volume": h24_volume.get_text(strip=True),
+                })
+
+        tree.delete(*tree.get_children())
+        for crypto in cryptos:
+            if selected_coin.get() == "Select Cryptocurrency" or crypto["Name"].startswith(selected_coin.get()):
+                tree.insert("", tk.END, values=(
+                    crypto["Name"],
+                    crypto["Price"],
+                    crypto["Change 24H"],
+                    crypto["Change 7D"],
+                    crypto["Total Volume"],
+                    crypto["24H Volume"]
+                ))
+
+        messagebox.showinfo("Success", "Data fetched successfully.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to fetch data:\n{e}")
+
+
+
+def export_data():
+    def update_csv(filename="cryptos.csv"):
+        scrape_data()
+        new_data = pd.DataFrame(scraper.cryptos)
+
+        if os.path.exists(filename):
+            old_data = pd.read_csv(filename)
+            combined = pd.concat([old_data, new_data], ignore_index=True)
+            combined = combined.drop_duplicates(subset=["Name", "Price"], keep="last")
+        else:
+            combined = new_data
+
+        combined.to_csv(filename, index=False)
+        print(f"Τα δεδομένα αποθηκεύτηκαν επιτυχώς.")
+
+    def load_data(filename="cryptos.csv"):
+        if os.path.exists(filename):
+            df = pd.read_csv(filename)
+            print(f"Οι εγγραφές φορτώθηκαν απο το αρχείο επιτυχώς.")
+            return df
+        else:
+            print("Το αρχείο δεν βρέθηκε.")
+            return pd.DataFrame()
+
+    def display_crypto_data(df):
+        if df.empty:
+            print("Δεν υπάρχουν δεδομένα για εμφάνιση.")
+            return
+
+        try:
+            print("\nΔεδομένα Κρυπτονομισμάτων:\n")
+            print(df[['Name', 'Price', 'Change 24H', 'Change 7D', 'Total Volume', '24H Volume']].drop_duplicates(
+                subset=["Name"], keep="last").to_string(index=False))
+        except KeyError as e:
+            print("Σφάλμα στο αρχείο", e)
+
+
+    update_csv()
+    df = load_data()
+    display_crypto_data(df)
+
+
+
+# === Dropdown Section ===
+Label(root, textvariable=selected_coin, font=("Arial", 14)).pack(pady=10)
+Button(root, text="Choose Coin", command=open_dropdown).pack()
+
+
+def show_chart():
+    def load_and_clean_data(filename="cryptos.csv"):
+        if not os.path.exists(filename):
+            print("Το αρχείο δεν βρέθηκε.")
+            return pd.DataFrame()
+
+        df = pd.read_csv(filename)
+        df = df.drop_duplicates(subset=["Name"], keep="last")
+
+        # Convert string values to float safely
+        df["Price"] = pd.to_numeric(df["Price"].replace(r'[\$,]', '', regex=True), errors='coerce')
+        df["Change 24H"] = pd.to_numeric(df["Change 24H"].replace('%', '', regex=True), errors='coerce')
+        df["Change 7D"] = pd.to_numeric(df["Change 7D"].replace('%', '', regex=True), errors='coerce')
+        df["Total Volume"] = pd.to_numeric(df["Total Volume"].replace(r'[\$,A-Za-z\s]', '', regex=True), errors='coerce')
+
+        df.dropna(subset=["Price", "Change 24H", "Change 7D", "Total Volume"], inplace=True)
+        return df
+
+    def bar_chart(df):
+        top5 = df.sort_values(by="Price", ascending=False).head(5)
+        plt.figure(figsize=(8, 5))
+        plt.bar(top5["Name"], top5["Price"], color='skyblue')
+        plt.title("Τιμές των 5 κορυφαίων κρυπτονομισμάτων")
+        plt.xlabel("Νόμισμα")
+        plt.ylabel("Τιμή σε USD")
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.show()
+
+    def pie_chart(df):
+        top5 = df.sort_values(by="Total Volume", ascending=False).head(5)
+        plt.figure(figsize=(7, 7))
+        plt.pie(top5["Total Volume"], labels=top5["Name"], autopct="%1.1f%%", startangle=140)
+        plt.title("Κατανομή Κεφαλαιοποίησης Αγοράς")
+        plt.axis("equal")
+        plt.tight_layout()
+        plt.show()
+
+    def line_plot(df):
+        top5 = df.head(5)
+        x = top5["Name"]
+        y1 = top5["Change 24H"]
+        y2 = top5["Change 7D"]
+
+        plt.figure(figsize=(9, 5))
+        plt.plot(x, y1, marker='o', label="Μεταβολή 24ώρου (%)")
+        plt.plot(x, y2, marker='s', label="Μεταβολή 7 ημερών (%)")
+        plt.title("Μεταβολές Τιμών")
+        plt.xlabel("Νόμισμα")
+        plt.ylabel("Μεταβολή (%)")
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
+        plt.show()
+
+    df = load_and_clean_data("cryptos.csv")
+    if df.empty:
+        messagebox.showerror("Σφάλμα", "Δεν βρέθηκαν δεδομένα ή το αρχείο cryptos.csv λείπει.")
+        return
+
+    def show_selected_chart():
+        chart_type = chart_var.get()
+        if chart_type == "Bar Chart":
+            bar_chart(df)
+        elif chart_type == "Pie Chart":
+            pie_chart(df)
+        elif chart_type == "Line Plot":
+            line_plot(df)
+
+    chart_window = tk.Toplevel(root)
+    chart_window.title("Επιλογή Γραφήματος")
+    chart_window.geometry("300x200")
+    chart_window.grab_set()
+    chart_window.focus_set()
+    chart_window.transient(root)
+
+    chart_var = tk.StringVar(value="Bar Chart")
+
+    tk.Label(chart_window, text="Διάλεξε τύπο γραφήματος:").pack(pady=10)
+    tk.Radiobutton(chart_window, text="Bar Chart", variable=chart_var, value="Bar Chart").pack(anchor="w", padx=20)
+    tk.Radiobutton(chart_window, text="Pie Chart", variable=chart_var, value="Pie Chart").pack(anchor="w", padx=20)
+    tk.Radiobutton(chart_window, text="Line Plot", variable=chart_var, value="Line Plot").pack(anchor="w", padx=20)
+
+    tk.Button(chart_window, text="Προβολή", command=show_selected_chart).pack(pady=10)
+
+
+
+
+def open_chatbot():
+    scrape_data()
+    chat_win = Toplevel(root)
+    chat_win.title("CryptoBot")
+    chat_win.geometry("700x500")
+
+    def chatbot_closing_warning():
+        if messagebox.askokcancel("Close Chatbot", "Είσαι σίγουρος ότι θες να βγεις από το chatbot?"):
+            chat_win.destroy()
+
+    chat_win.protocol("WM_DELETE_WINDOW", chatbot_closing_warning)
+
+    chat_display = tk.Text(chat_win, wrap="word", state="normal", bg="#f0f0f0")
+    chat_display.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # Welcome message from the bot
+    welcome_msg = "CryptoBot: Καλώς ήρθες! Ρώτησέ με ό,τι θέλεις για τα κρυπτονομίσματα.\n\n"
+    chat_display.insert("end", welcome_msg)
+    chat_display.configure(state="disabled")
+
+    entry_frame = Frame(chat_win)
+    entry_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+    entry = tk.Entry(entry_frame)
+    entry.pack(side="left", fill="x", expand=True)
+
+    SUPPORTED_COINS = [
+        ("bitcoin", "btc"),
+        ("ethereum", "eth"),
+        ("tether", "usdt"),
+        ("xrp", "xrp"),
+        ("binance coin", "bnb"),
+        ("solana", "sol"),
+        ("usd coin", "usdc"),
+        ("dogecoin", "doge"),
+        ("cardano", "ada"),
+        ("tron", "trx")
+    ]
+
+    def extract_coin(user_input):
+
+        user_input = user_input.lower()
+        for name, symbol in SUPPORTED_COINS:
+            if name in user_input or symbol in user_input:
+                return symbol
+        return None
+
+    def generate_response(user_input):
+        user_input = user_input.lower()
+
+        # ΓΕΝΙΚΟΙ ΚΑΝΌΝΕΣ CHATBOT
+        if re.search(r"(βοήθεια|τι μπορώ|οδηγίες|commands|help)", user_input):
+            return ("Μπορείς να ρωτήσεις:\n"
+                    " > Ποια τα νομίσματα που υποστιρίζονται?\n"
+                    " > Ποια η τιμή του χ νομίσματος?\n"
+                    " > Ποια η μεταβολή 24ωρου του χ νομισματος?\n"
+                    " > Ποια η μεταβολή 7 ημερών του χ νομίσμοτος?\n"
+                    " > Ποιος ο όγκος του χ νομίσμοτος?\n"
+                    " > Διαθέσιμα νομίσματα?\n"
+                    " > Ποιο το σύμβολο του χ νομίσματος?\n"
+                    " > Τι μπορώ να ρωτήσω\n"
+                    " > Ρόλος του project 2025 python?\n"
+                    " > Ποιες βιβλιοθήκες χρησιμοποιούνται για το chatbot?\n"
+                    " > Ποια η καλύτερη μπύρα στην Ελλάδα?\n"
+                    )
+
+        if re.search(r"(ποια.*νομίσματα|λίστα|διαθέσιμα|υποστηρίζονται)", user_input):
+            coins_list = ", ".join([f"{name.capitalize()}({symbol.upper()})" for name, symbol in SUPPORTED_COINS])
+            return f"Υποστηριζόμενα νομίσματα: {coins_list}"
+
+        if re.search(r"(άλλαξε|διάλεξε).*νόμισμα", user_input):
+            return "Πες μου το σύμβολο του νομίσματος που σε ενδιαφέρει (π.χ. BTC, ETH)."
+
+        elif re.search(r"(ρόλος|σκοπός).*project.*python", user_input):
+            return f"Ρόλος του project 2025 για τα κρυπτονομίσματα είναι η εξικίωση με διάφορα εργαλεία της python."
+
+        elif re.search(r"(βιβλιοθήκες).*chatbot", user_input):
+            return f"Χρησιμοποιήθηκε η βιβλιοθήκη re (regular expressions) για την αναγνώρηση και ταίριασμα κανονικών εκφράσεων."
+
+        elif re.search(r"(Καλύτερη | μπύρα)*ελλάδα", user_input):
+            return f"Προφανώς Μάμος."
+
+        # ΕΞΑΓΩΓΗ ΝΟΜΙΣΜΑΤΟΣ
+        coin = extract_coin(user_input)
+        if not coin:
+            return "Δώσε έγκυρο νόμισμα (π.χ. btc, eth)."
+
+        data = get_coin_data(coin)
+        if not data:
+            return "Δεν βρέθηκαν δεδομένα για το νόμισμα."
+
+        # ΠΛΗΡΟΦΟΡΙΕΣ ΓΙΑ ΝΟΜΙΣΜΑΤΑ
+        if re.search(r"(τιμή|κοστίζει|αξία|πόσο κάνει|price)", user_input):
+            return f"Η τιμή του {coin.upper()} είναι {data['Price']}."
+
+        elif re.search(r"(μεταβολή|άνοδος|πτώση).*(24|24ωρο)", user_input):
+            return f"Η μεταβολή 24ώρου του {coin.upper()} είναι {data['Change 24H']}."
+
+        elif re.search(r"(μεταβολή|άνοδος|πτώση). *(7|εβδομάδα)", user_input):
+            return f"Η μεταβολή 7 ημερών του {coin.upper()} είναι {data['Change 7D']}."
+
+        elif re.search(r"(όγκος|συναλλαγές). *(24|24ωρο)", user_input):
+            return f"Ο 24ώρος όγκος συναλλαγών του {coin.upper()} είναι {data['24H Volume']}."
+
+        elif re.search(r"(σύνολο|συνολικός|όγκος)", user_input):
+            return f"Ο συνολικός όγκος του {coin.upper()} είναι {data['Total Volume']}."
+
+        elif re.search(r"(ποιο|τι).*σύμβολο", user_input):
+            return f"Το σύμβολο του {coin.upper()} είναι {data['Symbol'].upper()}."
+
+        else:
+            return "Δεν κατάλαβα την ερώτησή σου. Δοκίμασε ξανά ή γράψε 'βοήθεια'."
+
+    def send_message(event=None):
+        user_msg = entry.get().strip()
+        if not user_msg:
+            return
+        entry.delete(0, tk.END)
+
+        response = generate_response(user_msg)
+
+        chat_display.configure(state="normal")
+        chat_display.insert("end", f"Εσύ: {user_msg}\nCryptoBot: {response}\n\n")
+        chat_display.configure(state="disabled")
+        chat_display.see("end")
+
+    entry.bind("<Return>", send_message)
+    Button(entry_frame, text="Send", command=send_message).pack(side="right", padx=5)
+
+
+Button(top_frame, text="Fetch Data", command=fetch_data).grid(row=0, column=0, padx=5)
+Button(top_frame, text="Export CSV", command=export_data).grid(row=0, column=1, padx=5)
+Button(top_frame, text="Show Chart", command=show_chart).grid(row=0, column=2, padx=5)
+Button(root, text="Chatbot", command=open_chatbot).pack(pady=10, padx=10)
+
+# === Data Table ===
+tree_frame = Frame(root)
+tree_frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+tree_scroll = Scrollbar(tree_frame)
+tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+tree = ttk.Treeview(tree_frame, yscrollcommand=tree_scroll.set)
+tree.pack(fill=tk.BOTH, expand=True)
+tree_scroll.config(command=tree.yview)
+
+# --- Define Columns ---
+tree["columns"] = ("Name", "Price", "24h Change", "7d Change", "Market Cap", "Volume")
+tree["show"] = "headings"
+for col in tree["columns"]:
+    tree.heading(col, text=col)
+    tree.column(col, anchor=tk.CENTER, width=120)
+
+# --- Sample rows ---
+sample_data = [
+    ("Bitcoin", "29000", "+2%", "+5%", "600B", "20B"),
+    ("Ethereum", "1800", "+1%", "+3%", "200B", "10B"),
+]
+
+for row in sample_data:
+    tree.insert("", tk.END, values=row)
+
+# === Run App ===
+root.mainloop()
