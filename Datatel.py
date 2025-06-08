@@ -1,11 +1,13 @@
 import os
 import pandas as pd
-import scraper  
+import scraper
+from scraper import scrape_data, get_coin_data
 
+#Ε
 def update_csv(filename="cryptos.csv"):
     scrape_data()
-    new_data=
-    pd.DataFrame(scraper.cryptos)
+
+    new_data = pd.DataFrame(scraper.cryptos)
 
     if os.path.exists(filename):
         old_data = pd.read_csv(filename)
@@ -15,6 +17,7 @@ def update_csv(filename="cryptos.csv"):
         combined = new_data
 
     combined.to_csv(filename, index=False)
+
     print(f"Τα δεδομένα αποθηκεύτηκαν επιτυχώς.")
 
 def load_data(filename="cryptos.csv"):
@@ -34,7 +37,9 @@ def display_crypto_data(df):
     try:
         print("\nΔεδομένα Κρυπτονομισμάτων:\n")
         print(df[['Name', 'Price', 'Change 24H', 'Change 7D', 'Total Volume', '24H Volume']].drop_duplicates(subset=["Name"], keep="last").to_string(index=False))
+
     except KeyError as e:
+
         print("Σφάλμα στο αρχείο", e)
 
 if __name__ == "__main__":
