@@ -20,20 +20,30 @@ def load_and_clean_data(filename="cryptos.csv"):
 def bar_chart(df):
     top5 = df.sort_values(by="Price", ascending=False).head(5)
     plt.figure(figsize=(8, 5))
-    plt.bar(top5["Name"], top5["Price"], color='skyblue')
-    plt.title("Τιμές των 5 κορυφαίων κρυπτονομισμάτων")
+    bars = plt.bar(top5["Name"], top5["Price"], color='skyblue', label="Τιμή σε USD")
+    plt.title("Τιμές των 5 Κορυφαίων Κρυπτονομισμάτων")
     plt.xlabel("Νόμισμα")
     plt.ylabel("Τιμή σε USD")
     plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend()
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2.0, height, f'{height:.2f}', ha='center', va='bottom')
     plt.tight_layout()
     plt.show()
 
 def pie_chart(df):
     top5 = df.sort_values(by="Total Volume", ascending=False).head(5)
     plt.figure(figsize=(7, 7))
-    plt.pie(top5["Total Volume"], labels=top5["Name"], autopct="%1.1f%%", startangle=140)
-    plt.title("Κατανομή Κεφαλαιοποίησης Αγοράς")
+    wedges, texts, autotexts = plt.pie(
+        top5["Total Volume"],
+        labels=top5["Name"],
+        autopct="%1.1f%%",
+        startangle=140
+    )
+    plt.title("Κατανομή Όγκου Συναλλαγών των 5 Κορυφαίων Κρυπτονομισμάτων")
     plt.axis("equal")
+    plt.legend(wedges, top5["Name"], title="Νομίσματα", loc="center left", bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     plt.show()
 
@@ -44,12 +54,12 @@ def line_plot(df):
     y2 = top5["Change 7D"]
 
     plt.figure(figsize=(9, 5))
-    plt.plot(x, y1, marker='o', label="Μεταβολή 24ώρου (%)")
-    plt.plot(x, y2, marker='s', label="Μεταβολή 7 ημερών (%)")
-    plt.title("Μεταβολές Τιμών")
+    plt.plot(x, y1, marker='o', label="Μεταβολή 24ώρου (%)", color='blue')
+    plt.plot(x, y2, marker='s', label="Μεταβολή 7 ημερών (%)", color='green')
+    plt.title("Μεταβολές Τιμών των 5 Κορυφαίων Κρυπτονομισμάτων")
     plt.xlabel("Νόμισμα")
     plt.ylabel("Μεταβολή (%)")
-    plt.legend()
+    plt.legend(title="Χρονικό Διάστημα")
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
     plt.show()
